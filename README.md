@@ -1,4 +1,4 @@
-# LivePulse 🎯
+# LiveVibe
 
 > An interactive live presentation platform built with Flutter and Firebase.  
 > Hosts create quiz sessions; participants join in real-time and answer questions from their phones.
@@ -127,4 +127,4 @@ sessions/{sessionId}
 
 ## License
 
-Academic project — ISI Ariana, 2nd Year Engineering, Semester 2.
+Academic project — ISI Ariana

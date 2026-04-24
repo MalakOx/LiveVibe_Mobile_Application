@@ -1,0 +1,44 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "projects": {
+    "default": "livevibe-project"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "flutterproject-b95b2",
+          "appId": "1:487564182494:android:71a479bd5e0433875e934f",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "flutterproject-b95b2",
+          "configurations": {
+            "android": "1:487564182494:android:71a479bd5e0433875e934f",
+            "ios": "1:487564182494:ios:11074ad0b19c347f5e934f",
+            "web": "1:487564182494:web:1ff3046c014e6d595e934f"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

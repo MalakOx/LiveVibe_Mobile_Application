@@ -1,0 +1,128 @@
+# ─────────────────────────────────────────────
+#  Flutter / Dart
+# ─────────────────────────────────────────────
+# Build outputs
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Dart generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Pub cache & lock (keep pubspec.lock for reproducible builds)
+# pubspec.lock   ← intentionally NOT ignored
+
+# Coverage
+coverage/
+
+# ─────────────────────────────────────────────
+#  Firebase / Google Services  ⚠️ SENSITIVE
+# ─────────────────────────────────────────────
+# Android
+android/app/google-services.json
+
+# iOS
+ios/Runner/GoogleService-Info.plist
+
+# Firebase CLI & emulator
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebaserc          # contains project aliases — add back if not sensitive
+
+# ─────────────────────────────────────────────
+#  Android
+# ─────────────────────────────────────────────
+android/.gradle/
+android/local.properties
+android/key.properties          # signing keystore config  ⚠️ SENSITIVE
+android/*.jks                   # keystore files           ⚠️ SENSITIVE
+android/*.keystore
+android/captures/
+android/.idea/
+android/gradlew
+android/gradlew.bat
+android/gradle/
+
+# ─────────────────────────────────────────────
+#  iOS / macOS
+# ─────────────────────────────────────────────
+ios/.symlinks/
+ios/Flutter/flutter_export_environment.sh
+ios/Pods/
+ios/Podfile.lock
+macos/.symlinks/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Xcode
+*.xcworkspace/
+!default.xcworkspace
+xcuserdata/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+DerivedData/
+*.hmap
+*.ipa
+*.xcarchive
+
+# ─────────────────────────────────────────────
+#  Web
+# ─────────────────────────────────────────────
+lib/generated_plugin_registrant.dart
+
+# ─────────────────────────────────────────────
+#  IDEs & Editors
+# ─────────────────────────────────────────────
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ─────────────────────────────────────────────
+#  OS generated files
+# ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─────────────────────────────────────────────
+#  Environment & Secrets  ⚠️ SENSITIVE
+# ─────────────────────────────────────────────
+.env
+.env.*
+*.pem
+*.p12
+secrets.dart
+lib/secrets.dart
+
+# ─────────────────────────────────────────────
+#  Misc
+# ─────────────────────────────────────────────
+*.log
+*.lock
+!pubspec.lock
+*.tmp
+*.bak

@@ -232,7 +232,7 @@ class _ParticipantEntryScreenState extends State<ParticipantEntryScreen> {
                 ),
               ),
               // Theme toggle button at the bottom
-              const ThemeToggleButton(),
+              const ThemeToggleButton(compact: true),
             ],
           ),
         ),

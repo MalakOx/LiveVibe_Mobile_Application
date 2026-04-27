@@ -51,6 +51,15 @@ class AppTheme {
           elevation: 0,
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          textStyle: const TextStyle(
+            fontFamily: 'Outfit', fontSize: 15, fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       cardTheme: CardThemeData(
         color: AppColors.bgCard,
         surfaceTintColor: Colors.transparent,

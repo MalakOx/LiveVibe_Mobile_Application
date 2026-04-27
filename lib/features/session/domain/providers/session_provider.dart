@@ -5,6 +5,13 @@ import '../../data/models/slide_model.dart';
 import '../../data/models/participant_model.dart';
 import '../../data/models/response_model.dart';
 import '../../../../core/utils/id_generator.dart';
+import '../services/scoring_service.dart';
+
+// ─── SCORING SERVICE ──────────────────────────────────────────────
+
+final scoringServiceProvider = Provider<ScoringService>((_) {
+  return ScoringService();
+});
 
 // ─── SESSION STREAM ───────────────────────────────────────────────
 
@@ -343,12 +350,16 @@ class ResponseController extends AsyncNotifier<void> {
     );
     if (alreadyAnswered) throw Exception('Already submitted for this slide.');
 
-    // Scoring logic
+    // Calculate points using ScoringService
+    final scoringService = ref.read(scoringServiceProvider);
     int pointsEarned = 0;
     if (type == SlideType.mcq && isCorrect == true) {
-      // Speed bonus: faster = more points (max 100)
-      final speedRatio = 1.0 - (responseTimeMs / (timeLimit * 1000));
-      pointsEarned = (50 + (50 * speedRatio.clamp(0, 1))).round();
+      pointsEarned = scoringService.calculatePoints(
+        isCorrect: true,
+        isPartial: false,
+        responseTimeMs: responseTimeMs,
+        timeLimitSeconds: timeLimit,
+      );
     }
 
     final response = ResponseModel(

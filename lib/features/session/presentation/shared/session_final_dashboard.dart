@@ -236,7 +236,7 @@ class SessionFinalDashboard extends ConsumerWidget {
                         '${participant.score}',
                         style: context.headlineSmall.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: AppColors.accentYellow,
+                          color: rank == 1 ? Colors.white : AppColors.accentYellow,
                         ),
                       ),
                       Text(

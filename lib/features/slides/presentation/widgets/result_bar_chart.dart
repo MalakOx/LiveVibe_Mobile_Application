@@ -66,8 +66,17 @@ class _ResultBarChartState extends State<ResultBarChart> with SingleTickerProvid
     }
     for (final r in widget.responses) {
       if (r.selectedOptionIndex != null) {
+        // Single answer mode
         counts[r.selectedOptionIndex!] =
             (counts[r.selectedOptionIndex!] ?? 0) + 1;
+      } else if (widget.slide.answerMode == AnswerMode.multiple && r.value.isNotEmpty) {
+        // Multiple answer mode: parse selected options from value field
+        final selectedOptions = r.value.split(', ');
+        for (var i = 0; i < widget.slide.options.length; i++) {
+          if (selectedOptions.contains(widget.slide.options[i])) {
+            counts[i] = (counts[i] ?? 0) + 1;
+          }
+        }
       }
     }
 
@@ -142,13 +151,6 @@ class _ResultBarChartState extends State<ResultBarChart> with SingleTickerProvid
                         size: 16,
                         color: AppColors.success,
                       ),
-                    // Show animated checkmark when all participants respond
-                    if (isCorrect && widget.allParticipantsResponded && widget.isLiveSession)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        size: 16,
-                        color: AppColors.success,
-                      ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
                     const SizedBox(width: 8),
                     Text(
                       '$count',

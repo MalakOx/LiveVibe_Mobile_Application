@@ -10,7 +10,9 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../shared/widgets/animated_gradient_bg.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/page_container.dart';
 import '../../../../shared/widgets/pulse_button.dart';
+import '../../../../shared/widgets/standard_app_bar.dart';
 import '../../../../shared/widgets/theme_toggle_button.dart';
 import '../../data/models/session_model.dart';
 import '../../data/models/slide_model.dart';
@@ -26,33 +28,37 @@ class HostSessionDashboardScreen extends ConsumerWidget {
     final slidesAsync = ref.watch(slidesStreamProvider(sessionId));
     final participantsAsync = ref.watch(participantsStreamProvider(sessionId));
 
-    return Scaffold(
-      body: AnimatedGradientBg(
-        child: sessionAsync.when(
-          loading: () => const Center(
+    return sessionAsync.when(
+      loading: () => Scaffold(
+        body: AnimatedGradientBg(
+          child: const Center(
             child: CircularProgressIndicator(color: AppColors.primary),
           ),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (session) => SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(context, ref, session, slidesAsync),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppDimensions.screenPadding,
-                    child: Column(
-                      children: [
-                        _buildSessionCard(context, session, participantsAsync),
-                        SizedBox(height: context.spacingLg),
-                        _buildQRSection(context, session),
-                        SizedBox(height: context.spacingLg),
-                        _buildSlidesSection(context, ref, session, slidesAsync),
-                        SizedBox(height: context.spacingMd),
-                      ],
-                    ),
-                  ),
+        ),
+      ),
+      error: (e, _) => Scaffold(
+        body: AnimatedGradientBg(
+          child: Center(child: Text('Error: $e')),
+        ),
+      ),
+      data: (session) => Scaffold(
+        appBar: _buildHeader(context, ref, session, slidesAsync),
+        body: AnimatedGradientBg(
+          child: SafeArea(
+            top: false,
+            child: PageContainer(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildSessionCard(context, session, participantsAsync),
+                    SizedBox(height: context.spacingLg),
+                    _buildQRSection(context, session),
+                    SizedBox(height: context.spacingLg),
+                    _buildSlidesSection(context, ref, session, slidesAsync),
+                    SizedBox(height: context.spacingMd),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -60,92 +66,41 @@ class HostSessionDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(
+  PreferredSizeWidget _buildHeader(
     BuildContext context,
     WidgetRef ref,
     SessionModel session,
     AsyncValue<List<SlideModel>> slidesAsync,
   ) {
-    return Container(
-      padding: AppDimensions.paddingMd.copyWith(top: AppDimensions.sm, bottom: AppDimensions.sm),
-      decoration: BoxDecoration(
-        color: context.bgCard.withOpacity(0.8),
-        border: Border(
-          bottom: BorderSide(color: context.divider, width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded,
-                color: context.textPrimary, size: 18),
-            onPressed: () => context.go('/host/dashboard'),
-          ),
-          SizedBox(width: context.spacingMd),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  session.title,
-                  style: context.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: context.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: session.status == SessionStatus.live
-                            ? AppColors.success
-                            : session.status == SessionStatus.ended
-                                ? AppColors.error
-                                : AppColors.warning,
-                      ),
-                    ),
-                    SizedBox(width: context.spacingMd),
-                    Text(
-                      session.status.name.toUpperCase(),
-                      style: context.caption.copyWith(
-                        color: context.textMuted,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+    final isSmallScreen = MediaQuery.of(context).size.width < 420;
+    return StandardAppBar(
+      title: session.title,
+      subtitle: session.status.name.toUpperCase(),
+      onBackPressed: () => context.go('/host/dashboard'),
+      actions: [
+        const ThemeToggleButton(compact: true),
+        SizedBox(width: isSmallScreen ? 6 : 8),
+        if (session.status == SessionStatus.waiting)
+          TextButton.icon(
+            onPressed: () => context.push('/host/editor/$sessionId'),
+            icon: const Icon(Icons.edit_rounded, size: 16),
+            label: const Text('Edit'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              textStyle: context.labelMedium.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
-          const ThemeToggleButton(),
-          SizedBox(width: context.spacingMd),
-          if (session.status == SessionStatus.waiting)
-            TextButton.icon(
-              onPressed: () => context.push('/host/editor/$sessionId'),
-              icon: const Icon(Icons.edit_rounded, size: 16),
-              label: const Text('Edit'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                textStyle: context.labelMedium.copyWith(fontWeight: FontWeight.w600),
-              ),
+        if (session.status == SessionStatus.live)
+          TextButton.icon(
+            onPressed: () => context.push('/host/live/$sessionId'),
+            icon: const Icon(Icons.bar_chart_rounded, size: 16),
+            label: const Text('Live'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.secondary,
+              textStyle: context.labelMedium.copyWith(fontWeight: FontWeight.w600),
             ),
-          if (session.status == SessionStatus.live)
-            TextButton.icon(
-              onPressed: () => context.push('/host/live/$sessionId'),
-              icon: const Icon(Icons.bar_chart_rounded, size: 16),
-              label: const Text('Live'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.secondary,
-                textStyle: context.labelMedium.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 

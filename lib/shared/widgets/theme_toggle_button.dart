@@ -5,15 +5,25 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/providers/theme_provider.dart';
 
 class ThemeToggleButton extends ConsumerWidget {
-  const ThemeToggleButton({super.key});
+  final bool compact;
+  const ThemeToggleButton({super.key, this.compact = true});
+
+  const ThemeToggleButton.compact({super.key}) : compact = true;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeNotifierProvider);
     final themeNotifier = ref.read(themeNotifierProvider.notifier);
+    final isNarrowScreen = MediaQuery.of(context).size.width < 420;
+    final useCompact = compact || isNarrowScreen;
+
+    final horizontalPadding = useCompact ? AppDimensions.sm : AppDimensions.lg;
+    final verticalPadding = useCompact ? AppDimensions.xs : AppDimensions.md;
+    final iconSize = useCompact ? AppDimensions.iconSm : AppDimensions.iconMd;
+    final borderWidth = useCompact ? 1.5 : 2.0;
 
     return Padding(
-      padding: EdgeInsets.all(AppDimensions.md),
+      padding: EdgeInsets.all(useCompact ? AppDimensions.xs : AppDimensions.md),
       child: GestureDetector(
         onTap: () => themeNotifier.toggleTheme(),
         child: Container(
@@ -24,22 +34,22 @@ class ThemeToggleButton extends ConsumerWidget {
               color: isDarkMode
                 ? AppColors.secondary.withOpacity(0.5)
                 : AppColors.secondary.withOpacity(0.4),
-              width: 2,
+              width: borderWidth,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDarkMode
                   ? AppColors.secondary.withOpacity(0.3)
                   : AppColors.shadowMediumLight,
-                blurRadius: isDarkMode ? 15 : 12,
-                spreadRadius: isDarkMode ? 2 : 1,
+                blurRadius: useCompact ? 8 : (isDarkMode ? 15 : 12),
+                spreadRadius: useCompact ? 0 : (isDarkMode ? 2 : 1),
               ),
             ],
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: AppDimensions.lg,
-              vertical: AppDimensions.md,
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -47,15 +57,17 @@ class ThemeToggleButton extends ConsumerWidget {
                 Icon(
                   isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                   color: isDarkMode ? AppColors.secondary : AppColors.primary,
-                  size: 24,
+                  size: iconSize,
                 ),
-                SizedBox(width: AppDimensions.md),
-                Text(
-                  isDarkMode ? 'Dark Mode' : 'Light Mode',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: isDarkMode ? AppColors.secondary : AppColors.primary,
+                if (!useCompact) ...[
+                  SizedBox(width: AppDimensions.md),
+                  Text(
+                    isDarkMode ? 'Dark Mode' : 'Light Mode',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: isDarkMode ? AppColors.secondary : AppColors.primary,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

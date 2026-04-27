@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/animated_gradient_bg.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/page_container.dart';
 import '../../../../shared/widgets/pulse_button.dart';
+import '../../../../shared/widgets/standard_app_bar.dart';
 import '../../../../shared/widgets/theme_toggle_button.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../data/models/slide_model.dart';
@@ -150,169 +152,159 @@ class _SlideEditorScreenState extends ConsumerState<SlideEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final slidesAsync = ref.watch(slidesStreamProvider(widget.sessionId));
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 420;
+    final headerActions = slidesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (slides) => slides.isEmpty
+          ? Tooltip(
+              message: 'Add at least one slide to start',
+              child: isSmallScreen
+                  ? Icon(
+                      Icons.info_outline_rounded,
+                      color: context.textMuted,
+                      size: 18,
+                    )
+                  : Text(
+                      'Add slides first',
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        color: context.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+            )
+          : isSmallScreen
+              ? IconButton(
+                  onPressed: () => _goLive(slides.length),
+                  constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: context.primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                )
+              : ElevatedButton.icon(
+                  onPressed: () => _goLive(slides.length),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primaryColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    visualDensity: VisualDensity.compact,
+                    minimumSize: const Size(0, 36),
+                  ),
+                  icon: const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'Start ${slides.length} Slide${slides.length != 1 ? 's' : ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+    );
 
     return Scaffold(
+      appBar: StandardAppBar(
+        title: 'Slide Editor',
+        onBackPressed: () => context.pop(),
+        actions: [
+          const ThemeToggleButton(compact: true),
+          SizedBox(width: isSmallScreen ? 6 : 8),
+          headerActions,
+          SizedBox(width: isSmallScreen ? 2 : 4),
+        ],
+      ),
       body: AnimatedGradientBg(
         child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                decoration: BoxDecoration(
-                  color: context.bgCard.withOpacity(0.8),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: context.divider,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: context.textPrimary,
-                        size: 18,
-                      ),
-                      onPressed: () => context.pop(),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Slide Editor',
-                        style: TextStyle(
-                          fontFamily: 'Outfit',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const ThemeToggleButton(),
-                    const SizedBox(width: 12),
-                    slidesAsync.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                      data: (slides) => slides.isEmpty
-                          ? Tooltip(
-                              message: 'Add at least one slide to start',
-                              child: Text(
-                                'Add slides first',
-                                style: TextStyle(
-                                  fontFamily: 'Outfit',
-                                  color: context.textMuted,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            )
-                          : ElevatedButton.icon(
-                              onPressed: () => _goLive(slides.length),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: context.primaryColor,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.play_arrow_rounded,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                              label: Text(
-                                'Start ${slides.length} Slide${slides.length != 1 ? 's' : ''}',
-                                style: const TextStyle(
-                                  fontFamily: 'Outfit',
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                    ),
+          top: false,
+          child: PageContainer(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Slide Type Selector
+                  _buildTypeSelector(),
+                  SizedBox(height: isSmallScreen ? 14 : 20),
+
+                  // Question field
+                  _buildQuestionField(),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
+
+                  // Type-specific options
+                  if (_selectedType == SlideType.mcq) ...[
+                    _buildAnswerModeSelector(),
+                    SizedBox(height: isSmallScreen ? 12 : 16),
                   ],
-                ),
-              ),
 
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Slide Type Selector
-                      _buildTypeSelector(),
-                      const SizedBox(height: 20),
+                  if (_selectedType == SlideType.mcq) _buildMCQOptions(),
 
-                      // Question field
-                      _buildQuestionField(),
-                      const SizedBox(height: 16),
+                  if (_selectedType == SlideType.mcq) ...[
+                    SizedBox(height: isSmallScreen ? 12 : 16),
+                    _buildMCQSettings(),
+                  ],
 
-                      // Type-specific options
-                      if (_selectedType == SlideType.mcq) ...[
-                        _buildAnswerModeSelector(),
-                        const SizedBox(height: 16),
-                      ],
-                      
-                      if (_selectedType == SlideType.mcq)
-                        _buildMCQOptions(),
+                  SizedBox(height: isSmallScreen ? 18 : 24),
 
-                      if (_selectedType == SlideType.mcq) ...[
-                        const SizedBox(height: 16),
-                        _buildMCQSettings(),
-                      ],
-
-                      const SizedBox(height: 24),
-
-                      // Save button
-                      slidesAsync.when(
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
-                        data: (slides) => PulseButton(
-                          label: 'Add Slide',
-                          icon: Icon(
-                            Icons.add_rounded,
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.textPrimary
-                                : AppColors.bgCardLight,
-                            size: 22,
-                          ),
-                          onPressed: () => _saveSlide(slides),
-                        ),
+                  // Save button
+                  slidesAsync.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data: (slides) => PulseButton(
+                      label: 'Add Slide',
+                      icon: Icon(
+                        Icons.add_rounded,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textPrimary
+                            : AppColors.bgCardLight,
+                        size: 22,
                       ),
-
-                      const SizedBox(height: 24),
-
-                      // Existing slides
-                      slidesAsync.when(
-                        loading: () => const CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                        error: (e, _) => Text('Error: $e'),
-                        data: (slides) => slides.isEmpty
-                            ? const SizedBox.shrink()
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Added Slides',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ...slides.asMap().entries.map((e) =>
-                                      _buildExistingSlide(
-                                          context, e.value, e.key + 1)),
-                                ],
-                              ),
-                      ),
-                    ],
+                      onPressed: () => _saveSlide(slides),
+                    ),
                   ),
-                ),
+
+                  SizedBox(height: isSmallScreen ? 18 : 24),
+
+                  // Existing slides
+                  slidesAsync.when(
+                    loading: () => const CircularProgressIndicator(
+                      color: AppColors.primary,
+                    ),
+                    error: (e, _) => Text('Error: $e'),
+                    data: (slides) => slides.isEmpty
+                        ? const SizedBox.shrink()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Added Slides',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 12),
+                              ...slides.asMap().entries.map((e) =>
+                                  _buildExistingSlide(context, e.value, e.key + 1)),
+                            ],
+                          ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -445,10 +437,12 @@ class _SlideEditorScreenState extends ConsumerState<SlideEditorScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 380;
+
+              Widget singleAnswerTile() {
+                return GestureDetector(
                   onTap: () => setState(() {
                     _answerMode = AnswerMode.single;
                     _correctIndices.clear();
@@ -493,11 +487,11 @@ class _SlideEditorScreenState extends ConsumerState<SlideEditorScreen> {
                       ],
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: GestureDetector(
+                );
+              }
+
+              Widget multipleAnswerTile() {
+                return GestureDetector(
                   onTap: () => setState(() {
                     _answerMode = AnswerMode.multiple;
                     _correctIndex = -1;
@@ -542,9 +536,27 @@ class _SlideEditorScreenState extends ConsumerState<SlideEditorScreen> {
                       ],
                     ),
                   ),
-                ),
-              ),
-            ],
+                );
+              }
+
+              if (isCompact) {
+                return Column(
+                  children: [
+                    SizedBox(width: double.infinity, child: singleAnswerTile()),
+                    const SizedBox(height: 10),
+                    SizedBox(width: double.infinity, child: multipleAnswerTile()),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: singleAnswerTile()),
+                  const SizedBox(width: 12),
+                  Expanded(child: multipleAnswerTile()),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -699,51 +711,74 @@ class _SlideEditorScreenState extends ConsumerState<SlideEditorScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.timer_rounded, color: context.primaryColor, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'Time Limit',
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 14,
-                  color: context.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              ...[ 15, 30, 60, 90].map((t) => GestureDetector(
-                    onTap: () => setState(() => _timeLimit = t),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.only(left: 6),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _timeLimit == t
-                            ? context.primaryColor.withOpacity(0.2)
-                            : context.bgElevated,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _timeLimit == t
-                              ? context.primaryColor
-                              : context.bgElevated,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 360;
+
+              final chips = [15, 30, 60, 90]
+                  .map(
+                    (t) => GestureDetector(
+                      onTap: () => setState(() => _timeLimit = t),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: EdgeInsets.only(left: isCompact ? 0 : 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                      ),
-                      child: Text(
-                        '${t}s',
-                        style: TextStyle(
-                          fontFamily: 'Outfit',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        decoration: BoxDecoration(
                           color: _timeLimit == t
-                              ? context.primaryColor
-                              : context.textMuted,
+                              ? context.primaryColor.withOpacity(0.2)
+                              : context.bgElevated,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _timeLimit == t
+                                ? context.primaryColor
+                                : context.bgElevated,
+                          ),
+                        ),
+                        child: Text(
+                          '${t}s',
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _timeLimit == t
+                                ? context.primaryColor
+                                : context.textMuted,
+                          ),
                         ),
                       ),
                     ),
-                  )),
-            ],
+                  )
+                  .toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.timer_rounded, color: context.primaryColor, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Time Limit',
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 14,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: chips,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

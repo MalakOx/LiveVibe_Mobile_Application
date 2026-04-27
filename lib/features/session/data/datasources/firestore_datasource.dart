@@ -214,6 +214,7 @@ class FirestoreDatasource {
         .doc(sessionId)
         .collection(_participants)
         .orderBy('score', descending: true)
+        .limit(50)  // Limit to prevent loading thousands of participants
         .snapshots()
         .map((snap) {
           return snap.docs
@@ -331,6 +332,7 @@ class FirestoreDatasource {
         .doc(sessionId)
         .collection(_responses)
         .where('slideId', isEqualTo: slideId)
+        .limit(50)  // Limit to prevent loading thousands of responses
         .snapshots()
         .map((snap) => snap.docs.map(ResponseModel.fromFirestore).toList());
   }

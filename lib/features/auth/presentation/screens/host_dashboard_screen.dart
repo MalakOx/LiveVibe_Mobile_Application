@@ -83,7 +83,7 @@ class HostDashboardScreen extends ConsumerWidget {
                             children: [
                               AppBranding(compact: true),
                               const Spacer(),
-                              const ThemeToggleButton(),
+                              const ThemeToggleButton(compact: true),
                               const SizedBox(width: 12),
                               GestureDetector(
                                 onTap: () => _showProfileMenu(context, ref, user),

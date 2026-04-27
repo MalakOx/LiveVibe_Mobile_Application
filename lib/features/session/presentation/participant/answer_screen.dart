@@ -138,19 +138,29 @@ class _AnswerScreenState extends ConsumerState<AnswerScreen> {
 
     // Check if answer is correct (support both single and multiple)
     // For multiple choice: allow partial answers
+    final scoringService = ref.read(scoringServiceProvider);
+
     final bool isCorrect;
-    bool isPartial = false; // NEW: Track if answer is partially correct
-    
+    bool isPartial = false; // Track if answer is partially correct
+
     if (slide.answerMode == AnswerMode.multiple) {
-      // Check if all selected options are correct
-      final allSelectedCorrect = _selectedOptions.every((idx) => slide.correctOptionIndices.contains(idx));
-      // Check if it's a full match
-      final isFullMatch = allSelectedCorrect && _selectedOptions.length == slide.correctOptionIndices.length;
-      
-      isCorrect = isFullMatch;
-      isPartial = allSelectedCorrect && !isFullMatch; // Partial = correct but incomplete
+      isPartial = scoringService.isPartialCorrect(
+        selectedIndices: _selectedOptions,
+        correctIndices: slide.correctOptionIndices,
+      );
+      isCorrect = scoringService.isFullyCorrect(
+        selectedIndex: null,
+        correctIndex: null,
+        selectedIndices: _selectedOptions,
+        correctIndices: slide.correctOptionIndices,
+      );
     } else {
-      isCorrect = slide.correctOptionIndex == _selectedOption;
+      isCorrect = scoringService.isFullyCorrect(
+        selectedIndex: _selectedOption,
+        correctIndex: slide.correctOptionIndex,
+        selectedIndices: {},
+        correctIndices: [],
+      );
       isPartial = false;
     }
 
@@ -165,6 +175,15 @@ class _AnswerScreenState extends ConsumerState<AnswerScreen> {
           ? slide.options[_selectedOption!]
           : _selectedOptions.map((i) => slide.options[i]).join(', ');
 
+      // Calculate points using ScoringService
+      final pointsEarned = scoringService.calculatePoints(
+        isCorrect: isCorrect,
+        isPartial: isPartial,
+        responseTimeMs: responseTime,
+        timeLimitSeconds: slide.timeLimit,
+      );
+      _pointsEarned = pointsEarned;
+
       await ref.read(responseControllerProvider.notifier).submitResponse(
         sessionId: widget.sessionId,
         slideId: slide.id,
@@ -178,15 +197,6 @@ class _AnswerScreenState extends ConsumerState<AnswerScreen> {
         responseTimeMs: responseTime,
         timeLimit: slide.timeLimit,
       );
-
-      if (isCorrect) {
-        final speedRatio = 1.0 - (responseTime / (slide.timeLimit * 1000));
-        _pointsEarned = (50 + (50 * speedRatio.clamp(0, 1))).round();
-      } else if (isPartial) {
-        // NEW: For partial answers, give 50% of points
-        final speedRatio = 1.0 - (responseTime / (slide.timeLimit * 1000));
-        _pointsEarned = ((50 + (50 * speedRatio.clamp(0, 1))) / 2).round();
-      }
 
       setState(() {
         _hasSubmitted = true;

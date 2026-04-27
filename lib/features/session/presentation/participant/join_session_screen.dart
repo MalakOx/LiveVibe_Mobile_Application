@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -8,8 +8,9 @@ import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/id_generator.dart';
 import '../../../../shared/widgets/animated_gradient_bg.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/page_container.dart';
 import '../../../../shared/widgets/pulse_button.dart';
-import '../../domain/providers/session_provider.dart';
+import '../../../../shared/widgets/standard_app_bar.dart';
 
 class JoinSessionScreen extends ConsumerStatefulWidget {
   const JoinSessionScreen({super.key});
@@ -25,6 +26,7 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
   final _nameController = TextEditingController();
   String _selectedAvatar = '';
   String? _scannedCode;
+  bool _isJoining = false;
 
   @override
   void initState() {
@@ -41,61 +43,45 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
     super.dispose();
   }
 
-  Future<void> _joinSession(String code) async {
-    if (_nameController.text.trim().isEmpty) {
+  Future<void> _joinSession(String rawCode) async {
+    final name = _nameController.text.trim();
+    final code = rawCode.trim().toUpperCase();
+
+    if (name.isEmpty) {
       context.showErrorSnackBar('Please enter your name first');
       return;
     }
 
-    final controller = ref.read(participantControllerProvider.notifier);
-    try {
-      await controller.joinSession(
-        code: code.trim().toUpperCase(),
-        name: _nameController.text.trim(),
-        avatar: _selectedAvatar,
-      );
-
-      if (mounted) {
-        context.pushReplacement('/session/waiting/${code.trim().toUpperCase()}');
-      }
-    } catch (e) {
-      if (mounted) {
-        context.showErrorSnackBar(e.toString());
-      }
+    if (code.length != 6) {
+      context.showErrorSnackBar('Please enter a valid 6-character code');
+      return;
     }
+
+    setState(() => _isJoining = true);
+
+    if (!mounted) return;
+
+    final encodedName = Uri.encodeComponent(name);
+    final encodedAvatar = Uri.encodeComponent(_selectedAvatar);
+    context.go('/session/waiting/$code?name=$encodedName&avatar=$encodedAvatar');
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(participantControllerProvider);
-    final isLoading = state.isLoading;
+    final isLoading = _isJoining;
 
     return Scaffold(
+      appBar: StandardAppBar(
+        title: 'Join Session',
+        onBackPressed: () => context.pop(),
+      ),
       body: AnimatedGradientBg(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          top: false,
+          child: PageContainer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(
-                  icon: Icon(Icons.arrow_back_ios_new_rounded,
-                      color: context.textPrimary),
-                  onPressed: () => context.pop(),
-                ).animate().fadeIn(),
-
-                const SizedBox(height: 16),
-
-                Text(
-                  'Join Session',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ).animate(delay: 100.ms).fadeIn().slideX(begin: -0.2, end: 0),
-
-                const SizedBox(height: 24),
-
-                // Avatar & Name Row
                 GlassCard(
                   child: Row(
                     children: [
@@ -143,10 +129,7 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
                     ],
                   ),
                 ).animate(delay: 200.ms).fadeIn(),
-
                 const SizedBox(height: 20),
-
-                // Tab bar
                 Container(
                   decoration: BoxDecoration(
                     color: context.bgCard,
@@ -174,80 +157,13 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
                     ],
                   ),
                 ).animate(delay: 300.ms).fadeIn(),
-
                 const SizedBox(height: 16),
-
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // CODE TAB
-                      Column(
-                        children: [
-                          GlassCard(
-                            child: Column(
-                              children: [
-                                TextField(
-                                  controller: _codeController,
-                                  textCapitalization: TextCapitalization.characters,
-                                  style: const TextStyle(
-                                    fontFamily: 'Outfit',
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: 8,
-                                  ),
-                                  decoration: const InputDecoration(
-                                    hintText: 'XXXXXX',
-                                    hintStyle: TextStyle(
-                                      fontFamily: 'Outfit',
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white54,
-                                      letterSpacing: 8,
-                                    ),
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    fillColor: Colors.transparent,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  maxLength: 6,
-                                  buildCounter: (_, {required currentLength,
-                                    required isFocused,
-                                    required maxLength}) => null,
-                                ),
-                                Divider(color: context.bgElevated),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Ask your host for the 6-digit code',
-                                  style: TextStyle(
-                                    fontFamily: 'Outfit',
-                                    fontSize: 12,
-                                    color: context.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ).animate(delay: 400.ms).fadeIn(),
-
-                          const Spacer(),
-
-                          PulseButton(
-                            label: 'Join Session',
-                            gradient: AppColors.gradientSecondary,
-                            isLoading: isLoading,
-                            icon: const Icon(Icons.login_rounded,
-                                color: Colors.white, size: 20),
-                            onPressed: isLoading
-                                ? null
-                                : () => _joinSession(_codeController.text),
-                          ).animate(delay: 500.ms).fadeIn(),
-                        ],
-                      ),
-
-                      // QR TAB
-                      _buildQRScanner(isLoading),
+                      _buildCodeTab(context, isLoading),
+                      _buildScannerTab(context, isLoading),
                     ],
                   ),
                 ),
@@ -257,6 +173,75 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildCodeTab(BuildContext context, bool isLoading) {
+    return Column(
+      children: [
+        GlassCard(
+          child: Column(
+            children: [
+              TextField(
+                controller: _codeController,
+                textCapitalization: TextCapitalization.characters,
+                style: const TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 8,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'XXXXXX',
+                  hintStyle: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white54,
+                    letterSpacing: 8,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  fillColor: Colors.transparent,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                maxLength: 6,
+                buildCounter: (
+                  _, {
+                  required int currentLength,
+                  required bool isFocused,
+                  required int? maxLength,
+                }) =>
+                    null,
+              ),
+              Divider(color: context.bgElevated),
+              const SizedBox(height: 4),
+              Text(
+                'Ask your host for the 6-digit code',
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 12,
+                  color: context.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ).animate(delay: 400.ms).fadeIn(),
+        const Spacer(),
+        PulseButton(
+          label: 'Join Session',
+          gradient: AppColors.gradientSecondary,
+          isLoading: isLoading,
+          icon: const Icon(Icons.login_rounded, color: Colors.white, size: 20),
+          onPressed: isLoading ? null : () => _joinSession(_codeController.text),
+        ).animate(delay: 500.ms).fadeIn(),
+      ],
+    );
+  }
+
+  Widget _buildScannerTab(BuildContext context, bool isLoading) {
+    return _buildQRScanner(isLoading);
   }
 
   Widget _buildQRScanner(bool isLoading) {
@@ -273,16 +258,14 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
                     final barcode = capture.barcodes.firstOrNull;
                     if (barcode?.rawValue != null && !isLoading) {
                       var code = barcode!.rawValue!.trim();
-                      
-                      // Extract code from URL if it's a full URL
+
                       if (code.contains('code=')) {
                         final uri = Uri.tryParse(code);
                         if (uri != null) {
                           code = uri.queryParameters['code'] ?? code;
                         }
                       }
-                      
-                      // Only process 6-character codes
+
                       if (code.length == 6 && code != _scannedCode) {
                         _scannedCode = code;
                         _joinSession(code);
@@ -291,7 +274,6 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
                   },
                 ),
               ),
-              // Scanning overlay with reticle
               Container(
                 width: 220,
                 height: 220,
@@ -303,7 +285,6 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              // Corner indicators
               ...List.generate(4, (index) {
                 final top = index < 2;
                 final left = index % 2 == 0;
@@ -317,14 +298,8 @@ class _JoinSessionScreenState extends ConsumerState<JoinSessionScreen>
                     height: 20,
                     decoration: BoxDecoration(
                       border: Border(
-                        top: BorderSide(
-                          color: AppColors.primary,
-                          width: 3,
-                        ),
-                        left: BorderSide(
-                          color: AppColors.primary,
-                          width: 3,
-                        ),
+                        top: BorderSide(color: AppColors.primary, width: 3),
+                        left: BorderSide(color: AppColors.primary, width: 3),
                       ),
                     ),
                   ),

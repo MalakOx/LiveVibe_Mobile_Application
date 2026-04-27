@@ -7,7 +7,9 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../shared/widgets/animated_gradient_bg.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/page_container.dart';
 import '../../../../shared/widgets/pulse_button.dart';
+import '../../../../shared/widgets/standard_app_bar.dart';
 import '../../domain/providers/session_provider.dart';
 
 class ParticipantResultsScreen extends ConsumerWidget {
@@ -25,8 +27,13 @@ class ParticipantResultsScreen extends ConsumerWidget {
     final participantsAsync = ref.watch(participantsStreamProvider(sessionId));
 
     return Scaffold(
+      appBar: StandardAppBar(
+        title: 'Final Results',
+        onBackPressed: () => context.pop(),
+      ),
       body: AnimatedGradientBg(
         child: SafeArea(
+          top: false,
           child: participantsAsync.when(
             loading: () => const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
@@ -49,8 +56,7 @@ class ParticipantResultsScreen extends ConsumerWidget {
               final currentRank =
                   sorted.indexOf(currentParticipant) + 1;
 
-              return Padding(
-                padding: AppDimensions.screenPadding,
+              return PageContainer(
                 child: Column(
                   children: [
                     SizedBox(height: context.spacingLg),

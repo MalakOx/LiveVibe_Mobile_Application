@@ -14,6 +14,7 @@ import '../../domain/providers/session_provider.dart';
 import '../../../slides/presentation/widgets/result_bar_chart.dart';
 import '../../../slides/presentation/widgets/word_cloud_widget.dart';
 import '../../../slides/presentation/widgets/timer_widget.dart';
+import 'widgets/live_session_header_widget.dart';
 
 class LiveResultsScreen extends ConsumerWidget {
   final String sessionId;
@@ -51,7 +52,17 @@ class LiveResultsScreen extends ConsumerWidget {
                 return SafeArea(
                   child: Column(
                     children: [
-                      _buildLiveHeader(context, ref, session, slides, currentSlide),
+                      LiveSessionHeaderWidget(
+                        session: session,
+                        slides: slides,
+                        onPrevious: session.currentSlideIndex > 0
+                            ? () => _navigateToPrevious(ref, sessionId, slides, session.currentSlideIndex)
+                            : null,
+                        onNext: session.currentSlideIndex < slides.length - 1
+                            ? () => _navigateToNext(ref, sessionId, slides, session.currentSlideIndex)
+                            : () => _endSessionAndNavigate(context, ref),
+                        onEnd: () => _showEndConfirmation(context, ref),
+                      ),
                       if (currentSlide != null)
                         Expanded(
                           child: _buildLiveContent(
@@ -74,158 +85,7 @@ class LiveResultsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLiveHeader(
-    BuildContext context,
-    WidgetRef ref,
-    SessionModel session,
-    List<SlideModel> slides,
-    SlideModel? currentSlide,
-  ) {
-    final currentIndex = session.currentSlideIndex;
-    final total = slides.length;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.bgCard.withOpacity(0.9),
-        border: Border(
-          bottom: BorderSide(color: context.divider),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Live indicator
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.error.withOpacity(0.4),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.error,
-                      ),
-                    )
-                        .animate(onPlay: (c) => c.repeat(reverse: true))
-                        .fadeIn(duration: 600.ms),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'LIVE',
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.error,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Slide ${currentIndex + 1} of $total',
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 13,
-                  color: context.textMuted,
-                ),
-              ),
-              const Spacer(),
-              // Navigation
-              Row(
-                children: [
-                  _navButton(
-                    context: context,
-                    icon: Icons.skip_previous_rounded,
-                    onTap: currentIndex > 0
-                        ? () => ref
-                            .read(sessionControllerProvider.notifier)
-                            .navigateSlide(sessionId, slides, currentIndex - 1)
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  // Next button - AUTO END if last slide
-                  _navButton(
-                    context: context,
-                    icon: currentIndex == total - 1 
-                        ? Icons.check_circle_rounded 
-                        : Icons.skip_next_rounded,
-                    onTap: currentIndex < total - 1
-                        ? () => ref
-                            .read(sessionControllerProvider.notifier)
-                            .navigateSlide(sessionId, slides, currentIndex + 1)
-                        : () => _endSessionAndNavigate(context, ref), // AUTO END on last slide
-                    color: currentIndex == total - 1 
-                        ? AppColors.success 
-                        : AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  _navButton(
-                    context: context,
-                    icon: Icons.stop_rounded,
-                    onTap: () => _showEndConfirmation(context, ref),
-                    color: AppColors.error,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: total > 0 ? (currentIndex + 1) / total : 0,
-              backgroundColor: context.bgElevated,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-              minHeight: 4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _navButton({
-    required BuildContext context,
-    required IconData icon,
-    VoidCallback? onTap,
-    Color? color,
-  }) {
-    final iconColor = onTap != null
-        ? (context.isDarkMode ? context.textPrimary : Colors.white)
-        : context.textMuted;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: onTap != null
-              ? (color ?? context.bgElevated)
-              : context.bgSubtle,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: iconColor,
-        ),
-      ),
-    );
-  }
+  // ─── DEPRECATED: These methods have been replaced by LiveSessionHeaderWidget ───
 
   Widget _buildLiveContent(
     BuildContext context,
@@ -413,58 +273,61 @@ class LiveResultsScreen extends ConsumerWidget {
         ...responses.asMap().entries.map((entry) {
           final i = entry.key;
           final r = entry.value;
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.divider),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  r.participantName.isNotEmpty
-                      ? r.participantName[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontWeight: FontWeight.w700,
-                    color: context.primaryColor,
-                    fontSize: 16,
+          return KeyedSubtree(
+            key: ValueKey(r.id),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.bgCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.divider),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    r.participantName.isNotEmpty
+                        ? r.participantName[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontWeight: FontWeight.w700,
+                      color: context.primaryColor,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        r.participantName,
-                        style: TextStyle(
-                          fontFamily: 'Outfit',
-                          fontSize: 12,
-                          color: context.textMuted,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r.participantName,
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 12,
+                            color: context.textMuted,
+                          ),
                         ),
-                      ),
-                      Text(
-                        r.value,
-                        style: TextStyle(
-                          fontFamily: 'Outfit',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: context.textPrimary,
+                        Text(
+                          r.value,
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: context.textPrimary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          )
-              .animate(delay: Duration(milliseconds: 50 * i))
-              .fadeIn()
-              .slideX(begin: 0.2, end: 0);
+                ],
+              ),
+            )
+                .animate(delay: Duration(milliseconds: 50 * i))
+                .fadeIn()
+                .slideX(begin: 0.2, end: 0),
+          );
         }),
       ],
     );
@@ -502,50 +365,53 @@ class LiveResultsScreen extends ConsumerWidget {
               ...top5.asMap().entries.map((entry) {
                 final rank = entry.key + 1;
                 final p = entry.value;
-                return Padding(
-                  padding: const EdgeInsets.all(0),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 28,
-                        child: Text(
-                          rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : '$rank.',
-                          style: const TextStyle(fontSize: 16),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        p.avatar,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          p.name,
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: context.textPrimary,
+                return KeyedSubtree(
+                  key: ValueKey(p.id),
+                  child: Padding(
+                    padding: const EdgeInsets.all(0),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 28,
+                          child: Text(
+                            rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : '$rank.',
+                            style: const TextStyle(fontSize: 16),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                      ),
-                      Text(
-                        '${p.score} pts',
-                        style: const TextStyle(
-                          fontFamily: 'Outfit',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.accentYellow,
+                        const SizedBox(width: 10),
+                        Text(
+                          p.avatar,
+                          style: const TextStyle(fontSize: 20),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-                    .animate(delay: Duration(milliseconds: 80 * rank))
-                    .fadeIn()
-                    .slideX(begin: 0.1, end: 0);
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            p.name,
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${p.score} pts',
+                          style: const TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accentYellow,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                      .animate(delay: Duration(milliseconds: 80 * rank))
+                      .fadeIn()
+                      .slideX(begin: 0.1, end: 0),
+                );
               }),
             ],
           ),
@@ -690,6 +556,28 @@ class LiveResultsScreen extends ConsumerWidget {
         ),
       ),
     );
+}
+
+void _navigateToPrevious(
+  WidgetRef ref,
+  String sessionId,
+  List<SlideModel> slides,
+  int currentIndex,
+) {
+  ref
+      .read(sessionControllerProvider.notifier)
+      .navigateSlide(sessionId, slides, currentIndex - 1);
+}
+
+void _navigateToNext(
+  WidgetRef ref,
+  String sessionId,
+  List<SlideModel> slides,
+  int currentIndex,
+) {
+  ref
+      .read(sessionControllerProvider.notifier)
+      .navigateSlide(sessionId, slides, currentIndex + 1);
 }
 
 void _showEndConfirmation(BuildContext context, WidgetRef ref) {
